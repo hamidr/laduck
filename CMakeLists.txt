@@ -28,6 +28,7 @@ set(EXTENSION_SOURCES
     src/functions/llm_load_model.cpp
     src/functions/llm_complete.cpp
     src/functions/llm_models.cpp
+    src/functions/llm_embed.cpp
     src/functions/llm_unload_model.cpp
     src/functions/llm_store_model.cpp
     src/functions/llm_delete_model.cpp)
