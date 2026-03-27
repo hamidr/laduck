@@ -1,0 +1,25 @@
+# Build
+build/
+cmake-build-*/
+
+# Nix-managed symlinks (created by `nix develop` shellHook)
+duckdb
+extension-ci-tools
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# vcpkg
+vcpkg_installed/
+
+# Nix
+result
+.direnv/

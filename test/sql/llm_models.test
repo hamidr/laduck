@@ -1,0 +1,11 @@
+# name: test/sql/llm_models.test
+# description: Test LaDuck extension — model catalog
+# group: [laduck]
+
+require laduck
+
+# Empty catalog on fresh load
+query ITIIII
+SELECT * FROM llm_models();
+----
+
