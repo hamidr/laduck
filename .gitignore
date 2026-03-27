@@ -20,6 +20,9 @@ Thumbs.db
 # vcpkg
 vcpkg_installed/
 
+# Models (large binary files)
+models/
+
 # Nix
 result
 .direnv/

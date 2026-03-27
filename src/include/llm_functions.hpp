@@ -9,6 +9,8 @@ void RegisterLlmLoadModelFunction(ExtensionLoader &loader);
 void RegisterLlmCompleteFunction(ExtensionLoader &loader);
 void RegisterLlmModelsFunction(ExtensionLoader &loader);
 void RegisterLlmUnloadModelFunction(ExtensionLoader &loader);
+void RegisterLlmStoreModelFunction(ExtensionLoader &loader);
+void RegisterLlmDeleteModelFunction(ExtensionLoader &loader);
 
 } // namespace laduck
 } // namespace duckdb

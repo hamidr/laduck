@@ -1,15 +1,13 @@
 #include "model_registry.hpp"
 
+#include "ggml-backend.h"
+
 #include <stdexcept>
 
 namespace duckdb {
 namespace laduck {
 
 LoadedModel::~LoadedModel() {
-	if (ctx) {
-		llama_free(ctx);
-		ctx = nullptr;
-	}
 	if (model) {
 		llama_model_free(model);
 		model = nullptr;
@@ -24,6 +22,7 @@ ModelRegistry &ModelRegistry::Instance() {
 void ModelRegistry::InitBackend() {
 	std::lock_guard<std::mutex> lock(registry_mutex_);
 	if (!backend_initialized_) {
+		ggml_backend_load_all();
 		llama_backend_init();
 		backend_initialized_ = true;
 	}
@@ -60,18 +59,6 @@ void ModelRegistry::Load(const std::string &name, const std::string &path, int32
 		throw std::runtime_error("Failed to load model from '" + path + "'. Is it a valid GGUF file?");
 	}
 
-	// Create context
-	auto ctx_params = llama_context_default_params();
-	ctx_params.n_ctx = static_cast<uint32_t>(n_ctx);
-	ctx_params.n_batch = static_cast<uint32_t>(n_ctx);
-
-	entry->ctx = llama_init_from_model(entry->model, ctx_params);
-	if (!entry->ctx) {
-		llama_model_free(entry->model);
-		entry->model = nullptr;
-		throw std::runtime_error("Failed to create inference context for model '" + name + "'.");
-	}
-
 	models_[name] = std::move(entry);
 }
 
@@ -83,9 +70,9 @@ void ModelRegistry::Unload(const std::string &name) {
 		throw std::runtime_error("Model '" + name + "' is not loaded.");
 	}
 
-	// Lock the context mutex to wait for any in-flight inference
+	// Lock the inference mutex to wait for any in-flight inference
 	{
-		std::lock_guard<std::mutex> ctx_lock(it->second->ctx_mutex);
+		std::lock_guard<std::mutex> inf_lock(it->second->inference_mutex);
 	}
 
 	models_.erase(it);

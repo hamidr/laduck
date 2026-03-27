@@ -23,10 +23,14 @@ add_subdirectory(third_party/llama.cpp EXCLUDE_FROM_ALL)
 set(EXTENSION_SOURCES
     src/laduck_extension.cpp
     src/registry/model_registry.cpp
+    src/registry/model_source.cpp
+    src/registry/model_storage.cpp
     src/functions/llm_load_model.cpp
     src/functions/llm_complete.cpp
     src/functions/llm_models.cpp
-    src/functions/llm_unload_model.cpp)
+    src/functions/llm_unload_model.cpp
+    src/functions/llm_store_model.cpp
+    src/functions/llm_delete_model.cpp)
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
@@ -38,8 +42,8 @@ target_include_directories(${EXTENSION_NAME} PRIVATE src/include)
 target_include_directories(${LOADABLE_EXTENSION_NAME} PRIVATE src/include)
 
 # llama.cpp headers
-target_include_directories(${EXTENSION_NAME} PRIVATE third_party/llama.cpp/include)
-target_include_directories(${LOADABLE_EXTENSION_NAME} PRIVATE third_party/llama.cpp/include)
+target_include_directories(${EXTENSION_NAME} PRIVATE third_party/llama.cpp/include third_party/llama.cpp/ggml/include)
+target_include_directories(${LOADABLE_EXTENSION_NAME} PRIVATE third_party/llama.cpp/include third_party/llama.cpp/ggml/include)
 
 # ---------------------------------------------------------------------------
 # Link llama.cpp

@@ -8,8 +8,6 @@
 #include "duckdb/common/exception.hpp"
 
 #include "llama.h"
-#include "common.h"
-
 #include <string>
 #include <vector>
 
@@ -18,10 +16,9 @@ namespace laduck {
 
 static std::string RunInference(LoadedModel &entry, const std::string &prompt, int32_t max_tokens, float temperature,
                                 float top_p) {
-	std::lock_guard<std::mutex> lock(entry.ctx_mutex);
+	std::lock_guard<std::mutex> lock(entry.inference_mutex);
 
 	auto *model = entry.model;
-	auto *ctx = entry.ctx;
 	auto *vocab = llama_model_get_vocab(model);
 
 	// Tokenize prompt
@@ -33,22 +30,21 @@ static std::string RunInference(LoadedModel &entry, const std::string &prompt, i
 	}
 	tokens.resize(n_tokens);
 
-	// Check context fits
-	int n_ctx = llama_n_ctx(ctx);
-	if (n_tokens + max_tokens > n_ctx) {
-		max_tokens = n_ctx - n_tokens;
-		if (max_tokens <= 0) {
-			return "";
-		}
-	}
+	// Create a fresh context for this inference call
+	auto ctx_params = llama_context_default_params();
+	ctx_params.n_ctx = static_cast<uint32_t>(n_tokens + max_tokens);
+	ctx_params.n_batch = static_cast<uint32_t>(n_tokens);
 
-	// Clear KV cache for fresh inference
-	llama_kv_cache_clear(ctx);
+	auto *ctx = llama_init_from_model(model, ctx_params);
+	if (!ctx) {
+		return "";
+	}
 
 	// Create batch for prompt
 	llama_batch batch = llama_batch_get_one(tokens.data(), n_tokens);
 
 	if (llama_decode(ctx, batch) != 0) {
+		llama_free(ctx);
 		return "";
 	}
 
@@ -85,6 +81,7 @@ static std::string RunInference(LoadedModel &entry, const std::string &prompt, i
 	}
 
 	llama_sampler_free(smpl);
+	llama_free(ctx);
 
 	return output;
 }

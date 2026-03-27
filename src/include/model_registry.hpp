@@ -24,8 +24,7 @@ struct LoadedModel {
 	std::string name;
 	std::string path;
 	llama_model *model = nullptr;
-	llama_context *ctx = nullptr;
-	std::mutex ctx_mutex;
+	std::mutex inference_mutex;
 	int32_t context_size = 2048;
 	int32_t gpu_layers = 99;
 
