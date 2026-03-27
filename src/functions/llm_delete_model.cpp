@@ -2,9 +2,7 @@
 #include "model_storage.hpp"
 
 #include "duckdb/common/types/vector.hpp"
-#include "duckdb/common/vector_operations/unary_executor.hpp"
-#include "duckdb/function/scalar_function.hpp"
-#include "duckdb/planner/expression/bound_function_expression.hpp"
+#include "duckdb/function/table_function.hpp"
 #include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/common/exception.hpp"
@@ -12,48 +10,39 @@
 namespace duckdb {
 namespace laduck {
 
-struct LlmDeleteModelData : public FunctionData {
-	ClientContext *context = nullptr;
-
-	unique_ptr<FunctionData> Copy() const override {
-		auto copy = make_uniq<LlmDeleteModelData>();
-		copy->context = context;
-		return std::move(copy);
-	}
-	bool Equals(const FunctionData &other) const override {
-		return true;
-	}
+struct LlmDeleteModelData : public TableFunctionData {
+	std::string name;
+	mutable bool done = false;
 };
 
-static unique_ptr<FunctionData> LlmDeleteModelBind(ClientContext &context, ScalarFunction &bound_function,
-                                                     vector<unique_ptr<Expression>> &arguments) {
-	auto data = make_uniq<LlmDeleteModelData>();
-	data->context = &context;
-	return std::move(data);
+static unique_ptr<FunctionData> LlmDeleteModelBind(ClientContext &context, TableFunctionBindInput &input,
+                                                     vector<LogicalType> &return_types, vector<string> &names) {
+	return_types.push_back(LogicalType::VARCHAR);
+	names.push_back("result");
+
+	auto result = make_uniq<LlmDeleteModelData>();
+	result->name = input.inputs[0].GetValue<string>();
+	return std::move(result);
 }
 
-static void LlmDeleteModelFunction(DataChunk &args, ExpressionState &state, Vector &result) {
-	auto &func_data = state.expr.Cast<BoundFunctionExpression>().bind_info->Cast<LlmDeleteModelData>();
-	auto *context = func_data.context;
+static void LlmDeleteModelExecute(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
+	auto &bind_data = data_p.bind_data->Cast<LlmDeleteModelData>();
+	if (bind_data.done) {
+		output.SetCardinality(0);
+		return;
+	}
 
-	UnaryExecutor::Execute<string_t, string_t>(
-	    args.data[0], result, args.size(), [&](string_t name_str) {
-		    auto name = name_str.GetString();
+	DeleteModelFromDb(context, bind_data.name);
 
-		    try {
-			    DeleteModelFromDb(*context, name);
-		    } catch (std::exception &e) {
-			    throw InvalidInputException(e.what());
-		    }
-
-		    return StringVector::AddString(result, name + " deleted from storage");
-	    });
+	auto msg = bind_data.name + " deleted from storage";
+	FlatVector::GetData<string_t>(output.data[0])[0] = StringVector::AddString(output.data[0], msg);
+	output.SetCardinality(1);
+	bind_data.done = true;
 }
 
 void RegisterLlmDeleteModelFunction(ExtensionLoader &loader) {
-	auto fn = ScalarFunction("llm_delete_model", {LogicalType::VARCHAR}, LogicalType::VARCHAR, LlmDeleteModelFunction,
-	                          LlmDeleteModelBind);
-	loader.RegisterFunction(fn);
+	TableFunction func("llm_delete_model", {LogicalType::VARCHAR}, LlmDeleteModelExecute, LlmDeleteModelBind);
+	loader.RegisterFunction(func);
 }
 
 } // namespace laduck

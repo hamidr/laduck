@@ -3,9 +3,7 @@
 #include "model_storage.hpp"
 
 #include "duckdb/common/types/vector.hpp"
-#include "duckdb/common/vector_operations/unary_executor.hpp"
-#include "duckdb/function/scalar_function.hpp"
-#include "duckdb/planner/expression/bound_function_expression.hpp"
+#include "duckdb/function/table_function.hpp"
 #include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/common/exception.hpp"
@@ -13,53 +11,47 @@
 namespace duckdb {
 namespace laduck {
 
-struct LlmStoreModelData : public FunctionData {
-	ClientContext *context = nullptr;
-
-	unique_ptr<FunctionData> Copy() const override {
-		auto copy = make_uniq<LlmStoreModelData>();
-		copy->context = context;
-		return std::move(copy);
-	}
-	bool Equals(const FunctionData &other) const override {
-		return true;
-	}
+struct LlmStoreModelData : public TableFunctionData {
+	std::string name;
+	std::string gguf_path;
+	mutable bool done = false;
 };
 
-static unique_ptr<FunctionData> LlmStoreModelBind(ClientContext &context, ScalarFunction &bound_function,
-                                                    vector<unique_ptr<Expression>> &arguments) {
-	auto data = make_uniq<LlmStoreModelData>();
-	data->context = &context;
-	return std::move(data);
+static unique_ptr<FunctionData> LlmStoreModelBind(ClientContext &context, TableFunctionBindInput &input,
+                                                    vector<LogicalType> &return_types, vector<string> &names) {
+	return_types.push_back(LogicalType::VARCHAR);
+	names.push_back("result");
+
+	auto result = make_uniq<LlmStoreModelData>();
+	result->name = input.inputs[0].GetValue<string>();
+
+	auto *entry = ModelRegistry::Instance().Get(result->name);
+	if (!entry) {
+		throw InvalidInputException("Model '" + result->name + "' is not loaded. Load it first before storing.");
+	}
+	result->gguf_path = entry->path;
+
+	return std::move(result);
 }
 
-static void LlmStoreModelFunction(DataChunk &args, ExpressionState &state, Vector &result) {
-	auto &func_data = state.expr.Cast<BoundFunctionExpression>().bind_info->Cast<LlmStoreModelData>();
-	auto *context = func_data.context;
+static void LlmStoreModelExecute(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
+	auto &bind_data = data_p.bind_data->Cast<LlmStoreModelData>();
+	if (bind_data.done) {
+		output.SetCardinality(0);
+		return;
+	}
 
-	UnaryExecutor::Execute<string_t, string_t>(
-	    args.data[0], result, args.size(), [&](string_t name_str) {
-		    auto name = name_str.GetString();
+	StoreModelToDb(context, bind_data.name, bind_data.gguf_path);
 
-		    auto *entry = ModelRegistry::Instance().Get(name);
-		    if (!entry) {
-			    throw InvalidInputException("Model '" + name + "' is not loaded. Load it first before storing.");
-		    }
-
-		    try {
-			    StoreModelToDb(*context, name, entry->path);
-		    } catch (std::exception &e) {
-			    throw InvalidInputException(e.what());
-		    }
-
-		    return StringVector::AddString(result, name + " stored in database");
-	    });
+	auto msg = bind_data.name + " stored in database";
+	FlatVector::GetData<string_t>(output.data[0])[0] = StringVector::AddString(output.data[0], msg);
+	output.SetCardinality(1);
+	bind_data.done = true;
 }
 
 void RegisterLlmStoreModelFunction(ExtensionLoader &loader) {
-	auto fn = ScalarFunction("llm_store_model", {LogicalType::VARCHAR}, LogicalType::VARCHAR, LlmStoreModelFunction,
-	                          LlmStoreModelBind);
-	loader.RegisterFunction(fn);
+	TableFunction func("llm_store_model", {LogicalType::VARCHAR}, LlmStoreModelExecute, LlmStoreModelBind);
+	loader.RegisterFunction(func);
 }
 
 } // namespace laduck

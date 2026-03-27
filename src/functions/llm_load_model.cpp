@@ -63,8 +63,6 @@ static void LlmLoadModelFunction(DataChunk &args, ExpressionState &state, Vector
 
 			switch (source.type) {
 			case ModelSourceType::LOCAL_FILE:
-				gguf_path = source.resolved_path;
-				break;
 			case ModelSourceType::HUGGINGFACE:
 				gguf_path = source.resolved_path;
 				break;
@@ -96,12 +94,10 @@ static void LlmLoadModelFunction(DataChunk &args, ExpressionState &state, Vector
 void RegisterLlmLoadModelFunction(ExtensionLoader &loader) {
 	ScalarFunctionSet load_set("llm_load_model");
 
-	// llm_load_model(path VARCHAR, model_name VARCHAR) → VARCHAR
 	auto fn2 = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::VARCHAR, LlmLoadModelFunction,
 	                           LlmLoadModelBind);
 	load_set.AddFunction(fn2);
 
-	// llm_load_model(path, model_name, n_gpu_layers, n_ctx) → VARCHAR
 	auto fn4 = ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::INTEGER, LogicalType::INTEGER},
 	                           LogicalType::VARCHAR, LlmLoadModelFunction, LlmLoadModelBind);
 	load_set.AddFunction(fn4);
