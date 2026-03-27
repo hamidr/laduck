@@ -1,11 +1,67 @@
 # name: test/sql/llm_models.test
-# description: Test LaDuck extension — model catalog
+# description: Test LaDuck extension — model catalog and error handling
 # group: [laduck]
 
 require laduck
 
-# Empty catalog on fresh load
+# ============================================================================
+# llm_models() — empty on fresh load
+# ============================================================================
+
 query ITIIII
 SELECT * FROM llm_models();
 ----
 
+# ============================================================================
+# llm_unload_model — error on unknown model
+# ============================================================================
+
+statement error
+SELECT llm_unload_model('nonexistent');
+----
+not loaded
+
+# ============================================================================
+# llm_load_model — error on missing file
+# ============================================================================
+
+statement error
+SELECT llm_load_model('/tmp/does_not_exist.gguf', 'bad');
+----
+Failed to load model
+
+# ============================================================================
+# llm_complete — error on unloaded model
+# ============================================================================
+
+statement error
+SELECT llm_complete('hello', 'not_loaded');
+----
+not loaded
+
+# ============================================================================
+# llm_embed — error on unloaded model
+# ============================================================================
+
+statement error
+SELECT llm_embed('hello', 'not_loaded');
+----
+not loaded
+
+# ============================================================================
+# llm_store_model — error on unloaded model
+# ============================================================================
+
+statement error
+SELECT * FROM llm_store_model('not_loaded');
+----
+not loaded
+
+# ============================================================================
+# llm_delete_model — error on missing stored model
+# ============================================================================
+
+statement error
+SELECT * FROM llm_delete_model('not_stored');
+----
+not found
