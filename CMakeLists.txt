@@ -15,6 +15,12 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
+# GPU backends — auto-detected by llama.cpp unless explicitly set:
+#   -DGGML_CUDA=ON    NVIDIA GPU (requires CUDA toolkit)
+#   -DGGML_METAL=ON   Apple GPU (auto-enabled on macOS)
+#   -DGGML_VULKAN=ON  Cross-platform GPU
+# CPU is always available as fallback (n_gpu_layers := 0)
+
 add_subdirectory(third_party/llama.cpp EXCLUDE_FROM_ALL)
 
 # ---------------------------------------------------------------------------
@@ -29,6 +35,7 @@ set(EXTENSION_SOURCES
     src/functions/llm_complete.cpp
     src/functions/llm_models.cpp
     src/functions/llm_embed.cpp
+    src/functions/llm_backends.cpp
     src/functions/llm_unload_model.cpp
     src/functions/llm_store_model.cpp
     src/functions/llm_delete_model.cpp)

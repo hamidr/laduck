@@ -16,6 +16,7 @@ static void LoadInternal(ExtensionLoader &loader) {
 	laduck::RegisterLlmModelsFunction(loader);
 	laduck::RegisterLlmUnloadModelFunction(loader);
 	laduck::RegisterLlmEmbedFunction(loader);
+	laduck::RegisterLlmBackendsFunction(loader);
 	laduck::RegisterLlmStoreModelFunction(loader);
 	laduck::RegisterLlmDeleteModelFunction(loader);
 }

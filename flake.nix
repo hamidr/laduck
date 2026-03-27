@@ -77,6 +77,56 @@
             };
           };
 
+          # CUDA variant (Linux only, requires NVIDIA GPU)
+          laduck-cuda = pkgs.stdenv.mkDerivation {
+            pname = "duckdb-laduck-cuda";
+            version = "0.1.0-dev";
+            src = lib.cleanSource ./.;
+
+            nativeBuildInputs = with pkgs; [
+              cmake
+              ninja
+              python3
+            ] ++ lib.optionals stdenv.isLinux [
+              cudaPackages.cuda_nvcc
+            ];
+
+            buildInputs = with pkgs; [
+              openssl
+            ] ++ lib.optionals stdenv.isLinux [
+              cudaPackages.cuda_cudart
+              cudaPackages.libcublas
+            ];
+
+            postUnpack = ''
+              ln -s ${duckdb-src} $sourceRoot/duckdb
+              ln -s ${ext-ci-tools} $sourceRoot/extension-ci-tools
+            '';
+
+            cmakeFlags = [ "-DGGML_CUDA=ON" ];
+
+            buildPhase = ''
+              runHook preBuild
+              GEN=ninja EXTRA_CMAKE_VARIABLES="-DGGML_CUDA=ON" make release
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib
+              cp build/release/extension/laduck/laduck.duckdb_extension $out/lib/
+              runHook postInstall
+            '';
+
+            dontConfigure = true;
+
+            meta = {
+              description = "LLM inference extension for DuckDB (CUDA GPU)";
+              license = lib.licenses.mit;
+              platforms = [ "x86_64-linux" "aarch64-linux" ];
+            };
+          };
+
           default = self'.packages.laduck;
         };
 
