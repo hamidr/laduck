@@ -127,6 +127,99 @@
             };
           };
 
+          # Vulkan variant (cross-platform GPU — AMD, NVIDIA, Intel)
+          laduck-vulkan = pkgs.stdenv.mkDerivation {
+            pname = "duckdb-laduck-vulkan";
+            version = "0.1.0-dev";
+            src = lib.cleanSource ./.;
+
+            nativeBuildInputs = with pkgs; [
+              cmake
+              ninja
+              python3
+            ];
+
+            buildInputs = with pkgs; [
+              openssl
+              vulkan-headers
+              vulkan-loader
+            ];
+
+            postUnpack = ''
+              ln -s ${duckdb-src} $sourceRoot/duckdb
+              ln -s ${ext-ci-tools} $sourceRoot/extension-ci-tools
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+              GEN=ninja EXTRA_CMAKE_VARIABLES="-DGGML_VULKAN=ON" make release
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib
+              cp build/release/extension/laduck/laduck.duckdb_extension $out/lib/
+              runHook postInstall
+            '';
+
+            dontConfigure = true;
+
+            meta = {
+              description = "LLM inference extension for DuckDB (Vulkan GPU)";
+              license = lib.licenses.mit;
+            };
+          };
+
+          # ROCm/HIP variant (Linux only, AMD GPUs)
+          laduck-rocm = pkgs.stdenv.mkDerivation {
+            pname = "duckdb-laduck-rocm";
+            version = "0.1.0-dev";
+            src = lib.cleanSource ./.;
+
+            nativeBuildInputs = with pkgs; [
+              cmake
+              ninja
+              python3
+            ] ++ lib.optionals stdenv.isLinux [
+              rocmPackages.clr
+            ];
+
+            buildInputs = with pkgs; [
+              openssl
+            ] ++ lib.optionals stdenv.isLinux [
+              rocmPackages.clr
+              rocmPackages.hipblas
+              rocmPackages.rocblas
+            ];
+
+            postUnpack = ''
+              ln -s ${duckdb-src} $sourceRoot/duckdb
+              ln -s ${ext-ci-tools} $sourceRoot/extension-ci-tools
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+              GEN=ninja EXTRA_CMAKE_VARIABLES="-DGGML_HIP=ON" make release
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib
+              cp build/release/extension/laduck/laduck.duckdb_extension $out/lib/
+              runHook postInstall
+            '';
+
+            dontConfigure = true;
+
+            meta = {
+              description = "LLM inference extension for DuckDB (AMD ROCm GPU)";
+              license = lib.licenses.mit;
+              platforms = [ "x86_64-linux" ];
+            };
+          };
+
           default = self'.packages.laduck;
         };
 

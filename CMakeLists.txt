@@ -18,7 +18,8 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 # GPU backends — auto-detected by llama.cpp unless explicitly set:
 #   -DGGML_CUDA=ON    NVIDIA GPU (requires CUDA toolkit)
 #   -DGGML_METAL=ON   Apple GPU (auto-enabled on macOS)
-#   -DGGML_VULKAN=ON  Cross-platform GPU
+#   -DGGML_VULKAN=ON  Cross-platform GPU (AMD, NVIDIA, Intel)
+#   -DGGML_HIP=ON     AMD GPU via ROCm/HIP (requires ROCm toolkit, Linux)
 # CPU is always available as fallback (n_gpu_layers := 0)
 
 add_subdirectory(third_party/llama.cpp EXCLUDE_FROM_ALL)
