@@ -10,6 +10,7 @@ void RegisterLlmCompleteFunction(ExtensionLoader &loader);
 void RegisterLlmModelsFunction(ExtensionLoader &loader);
 void RegisterLlmUnloadModelFunction(ExtensionLoader &loader);
 void RegisterLlmEmbedFunction(ExtensionLoader &loader);
+void RegisterLlmClassifyFunction(ExtensionLoader &loader);
 void RegisterLlmBackendsFunction(ExtensionLoader &loader);
 void RegisterLlmStoreModelFunction(ExtensionLoader &loader);
 void RegisterLlmDeleteModelFunction(ExtensionLoader &loader);

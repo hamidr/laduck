@@ -36,6 +36,7 @@ set(EXTENSION_SOURCES
     src/functions/llm_complete.cpp
     src/functions/llm_models.cpp
     src/functions/llm_embed.cpp
+    src/functions/llm_classify.cpp
     src/functions/llm_backends.cpp
     src/functions/llm_unload_model.cpp
     src/functions/llm_store_model.cpp
