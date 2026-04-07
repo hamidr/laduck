@@ -24,6 +24,7 @@ void ModelRegistry::InitBackend() {
 	if (!backend_initialized_) {
 		ggml_backend_load_all();
 		llama_backend_init();
+		llama_log_set([](enum ggml_log_level, const char *, void *) {}, nullptr);
 		backend_initialized_ = true;
 	}
 }
