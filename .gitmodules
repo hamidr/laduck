@@ -1,3 +1,9 @@
 [submodule "third_party/llama.cpp"]
 	path = third_party/llama.cpp
 	url = https://github.com/ggml-org/llama.cpp.git
+[submodule "duckdb"]
+	path = duckdb
+	url = https://github.com/duckdb/duckdb.git
+[submodule "extension-ci-tools"]
+	path = extension-ci-tools
+	url = https://github.com/duckdb/extension-ci-tools.git

@@ -2,10 +2,6 @@
 build/
 cmake-build-*/
 
-# Nix-managed symlinks (created by `nix develop` shellHook)
-duckdb
-extension-ci-tools
-
 # IDE
 .idea/
 .vscode/

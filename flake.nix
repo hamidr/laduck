@@ -242,15 +242,6 @@
           ];
 
           shellHook = ''
-            if [ ! -e duckdb ]; then
-              ln -sf ${duckdb-src} duckdb
-              echo "Linked duckdb/ → ${duckdb-src}"
-            fi
-            if [ ! -e extension-ci-tools ]; then
-              ln -sf ${ext-ci-tools} extension-ci-tools
-              echo "Linked extension-ci-tools/ → ${ext-ci-tools}"
-            fi
-
             echo ""
             echo "LaDuck extension dev shell ready."
             echo "  Build:  GEN=ninja make release"
